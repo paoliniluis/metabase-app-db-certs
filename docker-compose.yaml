@@ -1,0 +1,32 @@
+version: '3.9'
+services:
+  metabase-with-certs:
+    build: metabase-dockerfile/.
+    container_name: metabase-with-certs
+    hostname: metabase-with-certs
+    volumes: 
+    - /dev/urandom:/dev/random:ro
+    ports:
+      - 3000:3000
+    environment:
+      - "MB_DB_CONNECTION_URI=postgres://postgres-app-db-with-certs:5432/metabase?user=metabase&password=mysecretpassword&ssl=true&sslcert=/app/certs/client.crt&sslkey=/app/keys/client.der&sslmode=verify-full&sslrootcert=/app/certs/ca.crt"
+    networks: 
+      - metanet1-with-certs
+  postgres-app-db-with-certs:
+    image: paoliniluis/app-db-with-certs:postgres-14.3-alpine
+    container_name: postgres-app-db-with-certs
+    hostname: postgres-app-db-with-certs
+    ports:
+      - 5432:5432
+    environment:
+      - "POSTGRES_USER=metabase"
+      - "POSTGRES_DB=metabase"
+      - "POSTGRES_PASSWORD=mysecretpassword"
+    networks: 
+      - metanet1-with-certs
+    cpus: 1
+    mem_limit: 128m
+    command: -c ssl=on -c ssl_cert_file=/var/lib/postgresql/pgconf/server.crt -c ssl_key_file=/var/lib/postgresql/pgconf/server.key -c ssl_ca_file=/var/lib/postgresql/pgconf/ca.crt -c hba_file=/var/lib/postgresql/pg_hba.conf
+networks: 
+  metanet1-with-certs:
+    driver: bridge
